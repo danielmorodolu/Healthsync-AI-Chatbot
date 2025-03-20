@@ -1,6 +1,7 @@
 import logging
-from flask import Flask, render_template, session, redirect, url_for, request, jsonify
+from flask import Flask, render_template, session, redirect, url_for, request, jsonify, make_response
 from decouple import config
+from dotenv import load_dotenv
 from chatbot.routes import ChatRoutes
 from fitbit.fitbit import FitbitClient
 from chatbot.session_manager import SessionManager
@@ -11,6 +12,9 @@ from auth.auth import AuthManager
 from openai import OpenAI
 import httpx
 
+# Load environment-specific .env file
+load_dotenv()  # Load .env file
+
 app = Flask(__name__)
 app.secret_key = config("FLASK_SECRET_KEY")
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -18,6 +22,9 @@ app.config['SESSION_TYPE'] = 'filesystem'
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Log the environment for debugging
+logger.debug(f"Environment: {config('ENVIRONMENT', default='development')}")
 
 # Load cached symptoms
 symptom_map = load_cached_symptoms()
@@ -103,6 +110,7 @@ def fitbit_info():
     insights = None
     if 'fitbit_user' in session:
         fitbit_client.set_access_token(session.get('access_token'))
+        fitbit_client.set_refresh_token(session.get('refresh_token'))
         smartwatch_data = fitbit_client.get_fitbit_data()
         if smartwatch_data and (smartwatch_data['sp02'] != 'N/A' or smartwatch_data['heart_rate'] != 'N/A'):
             prompt = f"Analyze the following Fitbit data and provide health insights and improvement tips: SpO2: {smartwatch_data['sp02']}%, Heart Rate: {smartwatch_data['heart_rate']} bpm."
@@ -138,13 +146,10 @@ def health_dashboard():
     smartwatch_data = None
     if 'fitbit_user' in session:
         fitbit_client.set_access_token(session.get('access_token'))
+        fitbit_client.set_refresh_token(session.get('refresh_token'))
         smartwatch_data = fitbit_client.get_fitbit_data()
 
     return render_template('health_dashboard.html', smartwatch_data=smartwatch_data, manual_health_data=manual_health_data)
-
-
-
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

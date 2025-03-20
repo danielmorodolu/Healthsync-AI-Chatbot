@@ -74,6 +74,7 @@ class AuthManager:
         return redirect(url_for('chat_get'))
 
     def auth0_logout(self):
+        # Clear the session
         session.clear()
         # Redirect to Auth0 logout endpoint and then back to the app's index page
         return_to = url_for('index', _external=True)
@@ -137,5 +138,7 @@ class AuthManager:
         return redirect(url_for('chat_get'))
 
     def logout(self):
+        # Clear the session
         session.clear()
+        # Redirect to the index page
         return redirect(url_for('index'))

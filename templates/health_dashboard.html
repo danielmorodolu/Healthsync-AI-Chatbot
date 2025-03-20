@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HealthSync AI - Health Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://kit.fontawesome.com/584e930da3.js" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="header-content">
+                <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync Logo" class="logo">
+                <h1 class="header-title">HealthSync AI - Health Dashboard</h1>
+            </div>
+            <div class="nav-menu">
+                <button class="nav-toggle" onclick="toggleNavMenu()">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="/chat">Back to Chat</a>
+                    <a href="/fitbit_info">Fitbit Info</a>
+                    <a href="/profile">Profile & Settings</a>
+                    <a href="{% if 'fitbit_user' in session %}/logout{% else %}/auth0/logout{% endif %}">Sign Out</a>
+                </div>
+            </div>
+        </div>
+        <div class="chat-messages">
+            <div class="health-dashboard">
+                <h2>Your Health Dashboard</h2>
+                {% if smartwatch_data %}
+                    <h3>Fitbit Data</h3>
+                    <p><strong>SpO2:</strong> {{ smartwatch_data.sp02 if smartwatch_data.sp02 != 'N/A' else 'N/A' }}%</p>
+                    <p><strong>Heart Rate:</strong> {{ smartwatch_data.heart_rate if smartwatch_data.heart_rate != 'N/A' else 'N/A' }} bpm</p>
+                {% else %}
+                    <p>No Fitbit data available.</p>
+                {% endif %}
+                {% if manual_health_data %}
+                    <h3>Manual Inputs</h3>
+                    {% if manual_health_data.temperature %}
+                        <p><strong>Temperature:</strong> {{ manual_health_data.temperature }}°C</p>
+                    {% endif %}
+                    {% if manual_health_data.blood_pressure %}
+                        <p><strong>Blood Pressure:</strong> {{ manual_health_data.blood_pressure.systolic }}/{{ manual_health_data.blood_pressure.diastolic }} mmHg</p>
+                    {% endif %}
+                {% else %}
+                    <p>No manual health data available. <a href="/health_data">Add health data</a>.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <script>
+        function toggleNavMenu() {
+            const dropdown = document.getElementById('navDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+    </script>
+</body>
+</html>

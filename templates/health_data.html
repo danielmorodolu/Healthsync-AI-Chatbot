@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HealthSync AI - Add Health Data</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://kit.fontawesome.com/584e930da3.js" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync Logo" class="logo">
+            <h1>HealthSync AI - Add Health Data</h1>
+            <div class="nav-menu">
+                <button class="nav-toggle" onclick="toggleNavMenu()">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="/chat">Back to Chat</a>
+                    <a href="/fitbit_info">Fitbit Info</a>
+                    <a href="/profile">Profile & Settings</a>
+                    <a href="/health_dashboard">Health Dashboard</a>
+                    <a href="{% if 'fitbit_user' in session %}/logout{% else %}/auth0/logout{% endif %}">Sign Out</a>
+                </div>
+            </div>
+        </div>
+        <div class="chat-messages">
+            <div class="health-data-form">
+                <h2>Add Manual Health Data</h2>
+                <form id="healthDataForm" method="POST" action="/health_data">
+                    <input type="hidden" name="user_id" value="{{ user_id }}">
+                    <label for="temperature">Temperature (°C):</label>
+                    <input type="number" step="0.1" name="temperature" id="temperature" placeholder="e.g., 37.0">
+                    <label for="blood_pressure_systolic">Blood Pressure (Systolic, mmHg):</label>
+                    <input type="number" name="blood_pressure_systolic" id="blood_pressure_systolic" placeholder="e.g., 120">
+                    <label for="blood_pressure_diastolic">Blood Pressure (Diastolic, mmHg):</label>
+                    <input type="number" name="blood_pressure_diastolic" id="blood_pressure_diastolic" placeholder="e.g., 80">
+                    <button type="submit">Submit Health Data</button>
+                </form>
+                <a href="/chat">Back to Chat</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        function toggleNavMenu() {
+            const dropdown = document.getElementById('navDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        document.getElementById('healthDataForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => data[key] = value);
+            fetch('/health_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(response => response.json()).then(data => {
+                alert(data.message);
+                window.location.href = '/chat';
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Failed to submit health data. Please try again.');
+            });
+        });
+    </script>
+</body>
+</html>

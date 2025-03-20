@@ -1,0 +1,7 @@
+class ChatConfig:
+    CACHE_FILE = "symptoms_cache.json"
+    CACHE_EXPIRY = 3600
+    PROBABILITY_THRESHOLD = 0.5
+    MIN_QUESTIONS = 6
+    MAX_QUESTIONS = 10
+    PROBABILITY_DIFF_THRESHOLD = 0.1

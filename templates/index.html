@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthSync AI - Login</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .login-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #1a73e8;
+            font-size: 24px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .fitbit-btn {
+            background-color: #00B0B9;
+            color: white;
+        }
+        .fitbit-btn:hover {
+            background-color: #0097A3;
+        }
+        .auth0-btn {
+            background-color: #EB5424;
+            color: white;
+        }
+        .auth0-btn:hover {
+            background-color: #D6451F;
+        }
+        .logo {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="login-container">
+        <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync AI Logo" class="logo">
+        <h1>Welcome to HealthSync AI</h1>
+        <p>Your personal health assistant</p>
+        <button class="fitbit-btn" onclick="window.location.href='/fitbit/login'">Login with Fitbit</button>
+        <button class="auth0-btn" onclick="window.location.href='/auth0/login'">Sign Up / Sign In</button>
+    </div>
+</body>
+</html>

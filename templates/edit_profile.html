@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HealthSync AI - Edit Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://kit.fontawesome.com/584e930da3.js" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync Logo" class="logo">
+            <h1>HealthSync AI - Edit Profile</h1>
+            <div class="nav-menu">
+                <button class="nav-toggle" onclick="toggleNavMenu()">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="/chat">Back to Chat</a>
+                    <a href="/fitbit_info">Fitbit Info</a>
+                    <a href="/profile">Profile & Settings</a>
+                    <a href="/health_dashboard">Health Dashboard</a>
+                    <a href="{% if 'fitbit_user' in session %}/logout{% else %}/auth0/logout{% endif %}">Sign Out</a>
+                </div>
+            </div>
+        </div>
+        <div class="chat-messages">
+            <div class="health-data-form">
+                <h2>Edit Profile</h2>
+                <form id="editProfileForm" method="POST" action="/edit_profile">
+                    <input type="hidden" name="user_id" value="{{ user_id }}">
+                    <label for="age">Age:</label>
+                    <select name="age" id="ageSelect" required onchange="checkAge()">
+                        <option value="" disabled>Select Age</option>
+                        {% for i in range(18, 101) %}
+                            <option value="{{ i }}" {% if i == age %}selected{% endif %}>{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                    <div id="ageError" class="error-message" style="display: none;">
+                        This application is for users aged 18 and above. Please consult a pediatrician for children.
+                    </div>
+                    <label for="sex">Gender:</label>
+                    <select name="sex" required>
+                        <option value="" disabled>Select Gender</option>
+                        <option value="male" {% if sex == 'male' %}selected{% endif %}>Male</option>
+                        <option value="female" {% if sex == 'female' %}selected{% endif %}>Female</option>
+                        <option value="other" {% if sex == 'other' %}selected{% endif %}>Other</option>
+                    </select>
+                    <button type="submit">Save Changes</button>
+                </form>
+                <a href="/chat">Back to Chat</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        function toggleNavMenu() {
+            const dropdown = document.getElementById('navDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function checkAge() {
+            const age = parseInt(document.getElementById('ageSelect').value);
+            const ageError = document.getElementById('ageError');
+            if (age < 18) {
+                ageError.style.display = 'block';
+            } else {
+                ageError.style.display = 'none';
+            }
+        }
+
+        document.getElementById('editProfileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => data[key] = value);
+            fetch('/edit_profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(response => response.json()).then(data => {
+                alert(data.message);
+                window.location.href = '/chat';
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Failed to update profile. Please try again.');
+            });
+        });
+    </script>
+</body>
+</html>

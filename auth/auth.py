@@ -76,9 +76,9 @@ class AuthManager:
     def auth0_logout(self):
         # Clear the session
         session.clear()
-        # Redirect to Auth0 logout endpoint and then back to the app's index page
+        # Redirect to Auth0 logout endpoint with federated parameter to clear SSO session
         return_to = url_for('index', _external=True)
-        logout_url = f"https://{self.auth0_domain}/v2/logout?client_id={self.auth0_client_id}&returnTo={return_to}"
+        logout_url = f"https://{self.auth0_domain}/v2/logout?client_id={self.auth0_client_id}&returnTo={return_to}&federated"
         logger.debug(f"Auth0 Logout URL: {logout_url}")
         return redirect(logout_url)
 

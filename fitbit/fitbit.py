@@ -64,15 +64,18 @@ class FitbitClient:
         headers = {"Authorization": f"Bearer {self.access_token}"}
         today = datetime.now().strftime('%Y-%m-%d')
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        one_week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
 
         # Fetch SpO2 data
+        sp02_value = "N/A"
+        # Try current day
         sp02_response = requests.get(
             f"https://api.fitbit.com/1/user/-/spo2/date/{today}.json",
             headers=headers
         )
-        sp02_value = "N/A"
-        if sp02_response.status_code == 200 and sp02_response.json():
-            sp02_value = sp02_response.json().get('value', {}).get('avg', "N/A")
+        logger.debug(f"SpO2 response for {today}: {sp02_response.status_code} {sp02_response.text}")
+        if sp02_response.status_code == 200 and sp02_response.json() and 'value' in sp02_response.json():
+            sp02_value = sp02_response.json()['value'].get('avg', "N/A")
         else:
             if sp02_response.status_code == 401:
                 logger.error(f"SpO2 API error for {today}: {sp02_response.status_code} {sp02_response.reason} for url: {sp02_response.url}")
@@ -82,26 +85,31 @@ class FitbitClient:
                         f"https://api.fitbit.com/1/user/-/spo2/date/{today}.json",
                         headers=headers
                     )
-                    if sp02_response.status_code == 200 and sp02_response.json():
-                        sp02_value = sp02_response.json().get('value', {}).get('avg', "N/A")
-            if sp02_response.status_code != 200:
-                # Try yesterday's data as a fallback
-                sp02_response_yesterday = requests.get(
-                    f"https://api.fitbit.com/1/user/-/spo2/date/{yesterday}.json",
+                    logger.debug(f"SpO2 retry response for {today}: {sp02_response.status_code} {sp02_response.text}")
+                    if sp02_response.status_code == 200 and sp02_response.json() and 'value' in sp02_response.json():
+                        sp02_value = sp02_response.json()['value'].get('avg', "N/A")
+            if sp02_response.status_code != 200 or not sp02_response.json() or 'value' not in sp02_response.json():
+                # Try a date range (last 7 days)
+                sp02_range_response = requests.get(
+                    f"https://api.fitbit.com/1/user/-/spo2/date/{one_week_ago}/{today}.json",
                     headers=headers
                 )
-                if sp02_response_yesterday.status_code == 200 and sp02_response_yesterday.json():
-                    sp02_value = sp02_response_yesterday.json().get('value', {}).get('avg', "N/A")
-                else:
-                    logger.error(f"SpO2 fallback API error for {yesterday}: {sp02_response_yesterday.status_code} {sp02_response_yesterday.reason} for url: {sp02_response_yesterday.url}")
-                logger.debug(f"SpO2 response for {today}: {sp02_response.json()}, fallback {yesterday}: {sp02_response_yesterday.json()}")
+                logger.debug(f"SpO2 range response ({one_week_ago} to {today}): {sp02_range_response.status_code} {sp02_range_response.text}")
+                if sp02_range_response.status_code == 200 and sp02_range_response.json():
+                    # Get the most recent non-empty SpO2 value
+                    for entry in reversed(sp02_range_response.json()):
+                        if 'value' in entry and entry['value'].get('avg'):
+                            sp02_value = entry['value']['avg']
+                            break
 
         # Fetch Heart Rate data
+        heart_rate_value = "N/A"
+        # Try current day
         heart_rate_response = requests.get(
             f"https://api.fitbit.com/1/user/-/activities/heart/date/{today}/1d/1m.json",
             headers=headers
         )
-        heart_rate_value = "N/A"
+        logger.debug(f"Heart Rate response for {today}: {heart_rate_response.status_code} {heart_rate_response.text}")
         if heart_rate_response.status_code == 200 and heart_rate_response.json().get('activities-heart'):
             heart_rate_value = heart_rate_response.json()['activities-heart'][0].get('value', {}).get('restingHeartRate', "N/A")
         else:
@@ -113,19 +121,22 @@ class FitbitClient:
                         f"https://api.fitbit.com/1/user/-/activities/heart/date/{today}/1d/1m.json",
                         headers=headers
                     )
+                    logger.debug(f"Heart Rate retry response for {today}: {heart_rate_response.status_code} {heart_rate_response.text}")
                     if heart_rate_response.status_code == 200 and heart_rate_response.json().get('activities-heart'):
                         heart_rate_value = heart_rate_response.json()['activities-heart'][0].get('value', {}).get('restingHeartRate', "N/A")
-            if heart_rate_response.status_code != 200:
-                # Try yesterday's data as a fallback
-                heart_rate_response_yesterday = requests.get(
-                    f"https://api.fitbit.com/1/user/-/activities/heart/date/{yesterday}/1d/1m.json",
+            if heart_rate_response.status_code != 200 or not heart_rate_response.json().get('activities-heart'):
+                # Try a date range (last 7 days)
+                heart_rate_range_response = requests.get(
+                    f"https://api.fitbit.com/1/user/-/activities/heart/date/{one_week_ago}/{today}.json",
                     headers=headers
                 )
-                if heart_rate_response_yesterday.status_code == 200 and heart_rate_response_yesterday.json().get('activities-heart'):
-                    heart_rate_value = heart_rate_response_yesterday.json()['activities-heart'][0].get('value', {}).get('restingHeartRate', "N/A")
-                else:
-                    logger.error(f"Heart Rate fallback API error for {yesterday}: {heart_rate_response_yesterday.status_code} {heart_rate_response_yesterday.reason} for url: {heart_rate_response_yesterday.url}")
-                logger.debug(f"Heart Rate response for {today}: {heart_rate_response.json()}, fallback {yesterday}: {heart_rate_response_yesterday.json()}")
+                logger.debug(f"Heart Rate range response ({one_week_ago} to {today}): {heart_rate_range_response.status_code} {heart_rate_range_response.text}")
+                if heart_rate_range_response.status_code == 200 and heart_rate_range_response.json():
+                    # Get the most recent non-empty heart rate value
+                    for entry in reversed(heart_rate_range_response.json()['activities-heart']):
+                        if 'value' in entry and entry['value'].get('restingHeartRate'):
+                            heart_rate_value = entry['value']['restingHeartRate']
+                            break
 
         return {
             "sp02": sp02_value,

@@ -26,19 +26,14 @@ class AuthManager:
         self.environment = config("ENVIRONMENT", default="development")
         logger.debug(f"AuthManager Environment: {self.environment}")
 
-        # Log the raw values from the .env file for debugging
-        raw_auth0_callback_url = os.getenv("AUTH0_CALLBACK_URL", "Not set")
-        raw_fitbit_redirect_uri = os.getenv("FITBIT_REDIRECT_URI", "Not set")
-        logger.debug(f"Raw AUTH0_CALLBACK_URL from .env (via os.getenv): {raw_auth0_callback_url}")
-        logger.debug(f"Raw FITBIT_REDIRECT_URI from .env (via os.getenv): {raw_fitbit_redirect_uri}")
+        # Load redirect URLs from .env
+        self.auth0_callback_url = config("AUTH0_CALLBACK_URL", default="http://127.0.0.1:5000/auth0/callback")
+        self.fitbit_redirect_uri = config("FITBIT_REDIRECT_URI", default="http://127.0.0.1:5000/callback")
 
-        # Set redirect URLs based on environment
+        # Override for production environment
         if self.environment.lower() == "production":
             self.auth0_callback_url = "https://healthsync-ai-chatbot.onrender.com/auth0/callback"
             self.fitbit_redirect_uri = "https://healthsync-ai-chatbot.onrender.com/callback"
-        else:
-            self.auth0_callback_url = config("AUTH0_CALLBACK_URL", default="http://127.0.0.1:5000/auth0/callback")
-            self.fitbit_redirect_uri = config("FITBIT_REDIRECT_URI", default="http://127.0.0.1:5000/callback")
 
         logger.debug(f"Selected Auth0 Callback URL: {self.auth0_callback_url}")
         logger.debug(f"Selected Fitbit Redirect URI: {self.fitbit_redirect_uri}")

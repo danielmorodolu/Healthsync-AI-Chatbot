@@ -15,10 +15,10 @@ class FitbitClient:
         self.token_url = "https://api.fitbit.com/oauth2/token"
         # Use environment-specific redirect URI
         self.environment = config("ENVIRONMENT", default="development")
-        if self.environment == "production":
+        if self.environment.lower() == "production":
             self.redirect_uri = "https://healthsync-ai-chatbot.onrender.com/callback"
         else:
-            self.redirect_uri = config("FITBIT_REDIRECT_URI")
+            self.redirect_uri = config("FITBIT_REDIRECT_URI", default="http://127.0.0.1:5000/callback")
 
         logger.debug(f"FitbitClient Environment: {self.environment}")
         logger.debug(f"Fitbit Redirect URI: {self.redirect_uri}")

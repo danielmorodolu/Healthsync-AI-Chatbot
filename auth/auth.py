@@ -27,13 +27,13 @@ class AuthManager:
         logger.debug(f"AuthManager Environment: {self.environment}")
 
         # Set redirect URLs based on environment
-        if self.environment == "production":
+        if self.environment.lower() == "production":
             self.auth0_callback_url = "https://healthsync-ai-chatbot.onrender.com/auth0/callback"
             self.fitbit_redirect_uri = "https://healthsync-ai-chatbot.onrender.com/callback"
         else:
             # Use the values from .env for development
-            self.auth0_callback_url = config("AUTH0_CALLBACK_URL")
-            self.fitbit_redirect_uri = config("FITBIT_REDIRECT_URI")
+            self.auth0_callback_url = config("AUTH0_CALLBACK_URL", default="http://127.0.0.1:5000/auth0/callback")
+            self.fitbit_redirect_uri = config("FITBIT_REDIRECT_URI", default="http://127.0.0.1:5000/callback")
 
         logger.debug(f"Auth0 Callback URL: {self.auth0_callback_url}")
         logger.debug(f"Fitbit Redirect URI: {self.fitbit_redirect_uri}")
@@ -68,15 +68,18 @@ class AuthManager:
 
         session['auth0_user'] = token_response['id_token']
         session['access_token'] = token_response['access_token']
+        session['user_id'] = token_response.get('sub', 'default')  # Store user_id for session management
         session.modified = True
         logger.debug(f"Auth0 Session: {dict(session)}")
         return redirect(url_for('chat_get'))
 
     def auth0_logout(self):
         session.clear()
-        return redirect(
-            f"https://{self.auth0_domain}/v2/logout?client_id={self.auth0_client_id}&returnTo={url_for('index', _external=True)}"
-        )
+        # Redirect to Auth0 logout endpoint and then back to the app's index page
+        return_to = url_for('index', _external=True)
+        logout_url = f"https://{self.auth0_domain}/v2/logout?client_id={self.auth0_client_id}&returnTo={return_to}"
+        logger.debug(f"Auth0 Logout URL: {logout_url}")
+        return redirect(logout_url)
 
     def fitbit_login(self):
         code_verifier, code_challenge, state = self.generate_pkce_values()
@@ -127,6 +130,7 @@ class AuthManager:
         session['fitbit_user'] = True
         session['access_token'] = token_data['access_token']
         session['refresh_token'] = token_data.get('refresh_token')
+        session['user_id'] = token_data.get('user_id', 'default')  # Store user_id for session management
         session.modified = True
         logger.debug(f"✅ Session after saving token: {session}")
 

@@ -143,7 +143,7 @@ def health_dashboard():
     return render_template('health_dashboard.html', smartwatch_data=smartwatch_data, manual_health_data=manual_health_data)
 
 
-gunicorn --bind 0.0.0.0:$PORT app:app
+
 
 
 if __name__ == '__main__':

@@ -16,15 +16,27 @@ class AuthManager:
         self.auth0_domain = config("AUTH0_DOMAIN")
         self.auth0_client_id = config("AUTH0_CLIENT_ID")
         self.auth0_client_secret = config("AUTH0_CLIENT_SECRET")
-        self.auth0_callback_url = config("AUTH0_CALLBACK_URL", default="http://127.0.0.1:5000/auth0/callback")
         self.fitbit_client_id = config("FITBIT_CLIENT_ID")
         self.fitbit_client_secret = config("FITBIT_CLIENT_SECRET")
         self.fitbit_auth_url = "https://www.fitbit.com/oauth2/authorize"
         self.fitbit_token_url = "https://api.fitbit.com/oauth2/token"
         self.fitbit_api_url = "https://api.fitbit.com/1/user/-/"
 
-        # Use environment-specific callback URLs
-        self.fitbit_redirect_uri = config("FITBIT_REDIRECT_URI", default="http://127.0.0.1:5000/callback")
+        # Determine the environment
+        self.environment = config("ENVIRONMENT", default="development")
+        logger.debug(f"AuthManager Environment: {self.environment}")
+
+        # Set redirect URLs based on environment
+        if self.environment == "production":
+            self.auth0_callback_url = "https://healthsync-ai-chatbot.onrender.com/auth0/callback"
+            self.fitbit_redirect_uri = "https://healthsync-ai-chatbot.onrender.com/callback"
+        else:
+            # Use the values from .env for development
+            self.auth0_callback_url = config("AUTH0_CALLBACK_URL")
+            self.fitbit_redirect_uri = config("FITBIT_REDIRECT_URI")
+
+        logger.debug(f"Auth0 Callback URL: {self.auth0_callback_url}")
+        logger.debug(f"Fitbit Redirect URI: {self.fitbit_redirect_uri}")
 
         self.app.route('/auth0/login')(self.auth0_login)
         self.app.route('/auth0/callback')(self.auth0_callback)
@@ -90,6 +102,7 @@ class AuthManager:
         state = request.args.get('state')
 
         if not code or state != session.get('state'):
+            logger.error(f"Authorization failed: Invalid state or code. Code: {code}, State: {state}, Session State: {session.get('state')}")
             return "Authorization failed: Invalid state or code.", 400
 
         auth_header = base64.b64encode(f"{self.fitbit_client_id}:{self.fitbit_client_secret}".encode()).decode()

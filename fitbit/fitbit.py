@@ -3,6 +3,7 @@ import requests
 from datetime import datetime, timedelta
 from decouple import config
 import base64
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,9 @@ class FitbitClient:
         self.token_url = "https://api.fitbit.com/oauth2/token"
         # Use environment-specific redirect URI
         self.environment = config("ENVIRONMENT", default="development")
+        raw_fitbit_redirect_uri = os.getenv("FITBIT_REDIRECT_URI", "Not set")
+        logger.debug(f"Raw FITBIT_REDIRECT_URI from .env (via os.getenv): {raw_fitbit_redirect_uri}")
+
         if self.environment.lower() == "production":
             self.redirect_uri = "https://healthsync-ai-chatbot.onrender.com/callback"
         else:

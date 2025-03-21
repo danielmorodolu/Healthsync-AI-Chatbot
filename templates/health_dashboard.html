@@ -12,7 +12,7 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 25px;
-            max-height: 800px; /* Increased from 600px to 800px to show more content */
+            max-height: 800px;
             overflow-y: auto;
         }
         .dashboard-section {
@@ -84,8 +84,13 @@
         }
         /* Reduce space around the footer section */
         .dashboard-section.footer {
-            margin-bottom: 10px; /* Reduced from 25px */
-            padding-bottom: 10px; /* Reduced padding */
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+        }
+        .error-message {
+            color: var(--error-color);
+            font-size: 1.1em;
+            margin-top: 15px;
         }
     </style>
 </head>
@@ -113,182 +118,220 @@
             {% if smartwatch_data %}
                 <div class="dashboard-section">
                     <h2>Fitbit Metrics</h2>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-lungs"></i> SpO2</span>
-                        <span>{{ smartwatch_data.sp02 }}%</span>
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-heartbeat"></i> Heart Rate</span>
-                        <span>{{ smartwatch_data.heart_rate }} bpm</span>
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-heartbeat"></i> Heart Rate Zones</span>
-                    </div>
-                    <div class="sub-item">
+                    {% if smartwatch_data.sp02 == "Rate Limit Exceeded" %}
+                        <div class="error-message">
+                            Fitbit API rate limit exceeded. Please try again later.
+                        </div>
+                    {% else %}
                         <div class="dashboard-item">
-                            <span>Out of Range</span>
-                            <span>Calories: {{ smartwatch_data.heart_rate_zones.out_of_range.caloriesOut|round(2) }} kcal, Minutes: {{ smartwatch_data.heart_rate_zones.out_of_range.minutes }}</span>
+                            <span><i class="fas fa-lungs"></i> SpO2</span>
+                            <span>{{ smartwatch_data.sp02 }}%</span>
                         </div>
                         <div class="dashboard-item">
-                            <span>Fat Burn</span>
-                            <span>Calories: {{ smartwatch_data.heart_rate_zones.fat_burn.caloriesOut|round(2) }} kcal, Minutes: {{ smartwatch_data.heart_rate_zones.fat_burn.minutes }}</span>
+                            <span><i class="fas fa-heartbeat"></i> Heart Rate</span>
+                            <span>{{ smartwatch_data.heart_rate }} bpm</span>
                         </div>
                         <div class="dashboard-item">
-                            <span>Cardio</span>
-                            <span>Calories: {{ smartwatch_data.heart_rate_zones.cardio.caloriesOut|round(2) }} kcal, Minutes: {{ smartwatch_data.heart_rate_zones.cardio.minutes }}</span>
+                            <span><i class="fas fa-heartbeat"></i> Heart Rate Zones</span>
+                        </div>
+                        <div class="sub-item">
+                            <div class="dashboard-item">
+                                <span>Out of Range</span>
+                                <span>
+                                    Calories: 
+                                    {% if smartwatch_data.heart_rate_zones.out_of_range.caloriesOut != 'N/A' %}
+                                        {{ smartwatch_data.heart_rate_zones.out_of_range.caloriesOut|float|round(2) }} kcal
+                                    {% else %}
+                                        N/A kcal
+                                    {% endif %}
+                                    , Minutes: {{ smartwatch_data.heart_rate_zones.out_of_range.minutes }}
+                                </span>
+                            </div>
+                            <div class="dashboard-item">
+                                <span>Fat Burn</span>
+                                <span>
+                                    Calories: 
+                                    {% if smartwatch_data.heart_rate_zones.fat_burn.caloriesOut != 'N/A' %}
+                                        {{ smartwatch_data.heart_rate_zones.fat_burn.caloriesOut|float|round(2) }} kcal
+                                    {% else %}
+                                        N/A kcal
+                                    {% endif %}
+                                    , Minutes: {{ smartwatch_data.heart_rate_zones.fat_burn.minutes }}
+                                </span>
+                            </div>
+                            <div class="dashboard-item">
+                                <span>Cardio</span>
+                                <span>
+                                    Calories: 
+                                    {% if smartwatch_data.heart_rate_zones.cardio.caloriesOut != 'N/A' %}
+                                        {{ smartwatch_data.heart_rate_zones.cardio.caloriesOut|float|round(2) }} kcal
+                                    {% else %}
+                                        N/A kcal
+                                    {% endif %}
+                                    , Minutes: {{ smartwatch_data.heart_rate_zones.cardio.minutes }}
+                                </span>
+                            </div>
+                            <div class="dashboard-item">
+                                <span>Peak</span>
+                                <span>
+                                    Calories: 
+                                    {% if smartwatch_data.heart_rate_zones.peak.caloriesOut != 'N/A' %}
+                                        {{ smartwatch_data.heart_rate_zones.peak.caloriesOut|float|round(2) }} kcal
+                                    {% else %}
+                                        N/A kcal
+                                    {% endif %}
+                                    , Minutes: {{ smartwatch_data.heart_rate_zones.peak.minutes }}
+                                </span>
+                            </div>
                         </div>
                         <div class="dashboard-item">
-                            <span>Peak</span>
-                            <span>Calories: {{ smartwatch_data.heart_rate_zones.peak.caloriesOut|round(2) }} kcal, Minutes: {{ smartwatch_data.heart_rate_zones.peak.minutes }}</span>
+                            <span><i class="fas fa-shoe-prints"></i> Steps</span>
+                            <span>{{ smartwatch_data.steps }}</span>
                         </div>
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-shoe-prints"></i> Steps</span>
-                        <span>{{ smartwatch_data.steps }}</span>
-                    </div>
-                    {% if smartwatch_data.steps != 'N/A' %}
-                        <div class="progress-bar">
-                            <div class="progress" style="width: {{ steps_progress }}%;"></div>
+                        {% if smartwatch_data.steps != 'N/A' %}
+                            <div class="progress-bar">
+                                <div class="progress" style="width: {{ steps_progress }}%;"></div>
+                            </div>
+                        {% endif %}
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-map-marker-alt"></i> Distance</span>
+                            <span>{{ smartwatch_data.distance }} km</span>
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-fire"></i> Calories Burned</span>
+                            <span>{{ smartwatch_data.calories }} kcal</span>
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-running"></i> Active Minutes</span>
+                            <span>{{ smartwatch_data.active_minutes }} min</span>
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-building"></i> Floors Climbed</span>
+                            {% if smartwatch_data.floors == 'N/A' %}
+                                <span class="tooltip">
+                                    {{ smartwatch_data.floors }}
+                                    <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
+                                </span>
+                            {% else %}
+                                <span>{{ smartwatch_data.floors }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-bed"></i> Sleep Duration</span>
+                            {% if smartwatch_data.sleep_duration == 'N/A' %}
+                                <span class="tooltip">
+                                    {{ smartwatch_data.sleep_duration }} min
+                                    <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
+                                </span>
+                            {% else %}
+                                <span>{{ smartwatch_data.sleep_duration }} min</span>
+                            {% endif %}
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-moon"></i> Sleep Stages</span>
+                        </div>
+                        <div class="sub-item">
+                            <div class="dashboard-item">
+                                <span>Light</span>
+                                {% if smartwatch_data.sleep_stages.light == 'N/A' %}
+                                    <span class="tooltip">
+                                        {{ smartwatch_data.sleep_stages.light }} min
+                                        <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
+                                    </span>
+                                {% else %}
+                                    <span>{{ smartwatch_data.sleep_stages.light }} min</span>
+                                {% endif %}
+                            </div>
+                            <div class="dashboard-item">
+                                <span>Deep</span>
+                                {% if smartwatch_data.sleep_stages.deep == 'N/A' %}
+                                    <span class="tooltip">
+                                        {{ smartwatch_data.sleep_stages.deep }} min
+                                        <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
+                                    </span>
+                                {% else %}
+                                    <span>{{ smartwatch_data.sleep_stages.deep }} min</span>
+                                {% endif %}
+                            </div>
+                            <div class="dashboard-item">
+                                <span>REM</span>
+                                {% if smartwatch_data.sleep_stages.rem == 'N/A' %}
+                                    <span class="tooltip">
+                                        {{ smartwatch_data.sleep_stages.rem }} min
+                                        <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
+                                    </span>
+                                {% else %}
+                                    <span>{{ smartwatch_data.sleep_stages.rem }} min</span>
+                                {% endif %}
+                            </div>
+                            <div class="dashboard-item">
+                                <span>Wake</span>
+                                {% if smartwatch_data.sleep_stages.wake == 'N/A' %}
+                                    <span class="tooltip">
+                                        {{ smartwatch_data.sleep_stages.wake }} min
+                                        <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
+                                    </span>
+                                {% else %}
+                                    <span>{{ smartwatch_data.sleep_stages.wake }} min</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-weight"></i> Weight</span>
+                            {% if smartwatch_data.weight == 'N/A' %}
+                                <span class="tooltip">
+                                    {{ smartwatch_data.weight }} kg
+                                    <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
+                                </span>
+                            {% else %}
+                                <span>{{ smartwatch_data.weight }} kg</span>
+                            {% endif %}
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-ruler-vertical"></i> BMI</span>
+                            {% if smartwatch_data.bmi == 'N/A' %}
+                                <span class="tooltip">
+                                    {{ smartwatch_data.bmi }}
+                                    <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
+                                </span>
+                            {% else %}
+                                <span>{{ smartwatch_data.bmi }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-percentage"></i> Body Fat</span>
+                            {% if smartwatch_data.body_fat == 'N/A' %}
+                                <span class="tooltip">
+                                    {{ smartwatch_data.body_fat }}%
+                                    <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
+                                </span>
+                            {% else %}
+                                <span>{{ smartwatch_data.body_fat }}%</span>
+                            {% endif %}
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-tint"></i> Water Intake</span>
+                            {% if smartwatch_data.water == 'N/A' %}
+                                <span class="tooltip">
+                                    {{ smartwatch_data.water }} mL
+                                    <span class="tooltiptext">Log your water intake in the Fitbit app to see this data.</span>
+                                </span>
+                            {% else %}
+                                <span>{{ smartwatch_data.water }} mL</span>
+                            {% endif %}
+                        </div>
+                        <div class="dashboard-item">
+                            <span><i class="fas fa-utensils"></i> Calories Intake</span>
+                            {% if smartwatch_data.calories_in == 'N/A' %}
+                                <span class="tooltip">
+                                    {{ smartwatch_data.calories_in }} kcal
+                                    <span class="tooltiptext">Log your food intake in the Fitbit app to see this data.</span>
+                                </span>
+                            {% else %}
+                                <span>{{ smartwatch_data.calories_in }} kcal</span>
+                            {% endif %}
                         </div>
                     {% endif %}
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-map-marker-alt"></i> Distance</span>
-                        <span>{{ smartwatch_data.distance }} km</span>
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-fire"></i> Calories Burned</span>
-                        <span>{{ smartwatch_data.calories }} kcal</span>
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-running"></i> Active Minutes</span>
-                        <span>{{ smartwatch_data.active_minutes }} min</span>
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-building"></i> Floors Climbed</span>
-                        {% if smartwatch_data.floors == 'N/A' %}
-                            <span class="tooltip">
-                                {{ smartwatch_data.floors }}
-                                <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
-                            </span>
-                        {% else %}
-                            <span>{{ smartwatch_data.floors }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-bed"></i> Sleep Duration</span>
-                        {% if smartwatch_data.sleep_duration == 'N/A' %}
-                            <span class="tooltip">
-                                {{ smartwatch_data.sleep_duration }} min
-                                <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
-                            </span>
-                        {% else %}
-                            <span>{{ smartwatch_data.sleep_duration }} min</span>
-                        {% endif %}
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-moon"></i> Sleep Stages</span>
-                    </div>
-                    <div class="sub-item">
-                        <div class="dashboard-item">
-                            <span>Light</span>
-                            {% if smartwatch_data.sleep_stages.light == 'N/A' %}
-                                <span class="tooltip">
-                                    {{ smartwatch_data.sleep_stages.light }} min
-                                    <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
-                                </span>
-                            {% else %}
-                                <span>{{ smartwatch_data.sleep_stages.light }} min</span>
-                            {% endif %}
-                        </div>
-                        <div class="dashboard-item">
-                            <span>Deep</span>
-                            {% if smartwatch_data.sleep_stages.deep == 'N/A' %}
-                                <span class="tooltip">
-                                    {{ smartwatch_data.sleep_stages.deep }} min
-                                    <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
-                                </span>
-                            {% else %}
-                                <span>{{ smartwatch_data.sleep_stages.deep }} min</span>
-                            {% endif %}
-                        </div>
-                        <div class="dashboard-item">
-                            <span>REM</span>
-                            {% if smartwatch_data.sleep_stages.rem == 'N/A' %}
-                                <span class="tooltip">
-                                    {{ smartwatch_data.sleep_stages.rem }} min
-                                    <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
-                                </span>
-                            {% else %}
-                                <span>{{ smartwatch_data.sleep_stages.rem }} min</span>
-                            {% endif %}
-                        </div>
-                        <div class="dashboard-item">
-                            <span>Wake</span>
-                            {% if smartwatch_data.sleep_stages.wake == 'N/A' %}
-                                <span class="tooltip">
-                                    {{ smartwatch_data.sleep_stages.wake }} min
-                                    <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
-                                </span>
-                            {% else %}
-                                <span>{{ smartwatch_data.sleep_stages.wake }} min</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-weight"></i> Weight</span>
-                        {% if smartwatch_data.weight == 'N/A' %}
-                            <span class="tooltip">
-                                {{ smartwatch_data.weight }} kg
-                                <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
-                            </span>
-                        {% else %}
-                            <span>{{ smartwatch_data.weight }} kg</span>
-                        {% endif %}
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-ruler-vertical"></i> BMI</span>
-                        {% if smartwatch_data.bmi == 'N/A' %}
-                            <span class="tooltip">
-                                {{ smartwatch_data.bmi }}
-                                <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
-                            </span>
-                        {% else %}
-                            <span>{{ smartwatch_data.bmi }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-percentage"></i> Body Fat</span>
-                        {% if smartwatch_data.body_fat == 'N/A' %}
-                            <span class="tooltip">
-                                {{ smartwatch_data.body_fat }}%
-                                <span class="tooltiptext">Sync your Fitbit device to see this data.</span>
-                            </span>
-                        {% else %}
-                            <span>{{ smartwatch_data.body_fat }}%</span>
-                        {% endif %}
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-tint"></i> Water Intake</span>
-                        {% if smartwatch_data.water == 'N/A' %}
-                            <span class="tooltip">
-                                {{ smartwatch_data.water }} mL
-                                <span class="tooltiptext">Log your water intake in the Fitbit app to see this data.</span>
-                            </span>
-                        {% else %}
-                            <span>{{ smartwatch_data.water }} mL</span>
-                        {% endif %}
-                    </div>
-                    <div class="dashboard-item">
-                        <span><i class="fas fa-utensils"></i> Calories Intake</span>
-                        {% if smartwatch_data.calories_in == 'N/A' %}
-                            <span class="tooltip">
-                                {{ smartwatch_data.calories_in }} kcal
-                                <span class="tooltiptext">Log your food intake in the Fitbit app to see this data.</span>
-                            </span>
-                        {% else %}
-                            <span>{{ smartwatch_data.calories_in }} kcal</span>
-                        {% endif %}
-                    </div>
                 </div>
             {% endif %}
 

@@ -2,43 +2,99 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>HealthSync AI - Fitbit Info</title>
+    <title>HealthSync AI - Fitbit Insights</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://kit.fontawesome.com/584e930da3.js" crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .fitbit-info-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 25px;
+        }
+        .fitbit-data-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .fitbit-data-item i {
+            margin-right: 10px;
+            color: var(--primary-color);
+            font-size: 1.2em;
+        }
+        .insights-section {
+            margin-top: 25px;
+        }
+        .insights-section h2 {
+            font-size: 1.8em;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        .insights-section ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        .insights-section li {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .error-message {
+            color: var(--error-color);
+            font-size: 1.1em;
+            margin-top: 15px;
+        }
+    </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync Logo" class="logo">
-            <h1>HealthSync AI - Fitbit Info</h1>
+            <div class="header-content">
+                <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync Logo" class="logo">
+                <h1 class="header-title">HealthSync AI - Fitbit Insights</h1>
+            </div>
             <div class="nav-menu">
                 <button class="nav-toggle" onclick="toggleNavMenu()">
                     <i class="fas fa-ellipsis-v"></i>
                 </button>
                 <div class="nav-dropdown" id="navDropdown">
-                    <a href="/chat">Back to Chat</a>
+                    <a href="/fitbit_info">Fitbit Insights</a>
                     <a href="/profile">Profile & Settings</a>
+                    <a href="/health_dashboard">Health Dashboard</a>
+                    <a href="/chat">Chat</a>
                     <a href="{% if 'fitbit_user' in session %}/logout{% else %}/auth0/logout{% endif %}">Sign Out</a>
                 </div>
             </div>
         </div>
-        <div class="chat-messages">
-            <div class="fitbit-info">
-                <h2>Your Fitbit Data</h2>
-                {% if smartwatch_data %}
-                    <p><strong>SpO2:</strong> {{ smartwatch_data.sp02 if smartwatch_data.sp02 != 'N/A' else 'N/A' }}%</p>
-                    <p><strong>Heart Rate:</strong> {{ smartwatch_data.heart_rate if smartwatch_data.heart_rate != 'N/A' else 'N/A' }} bpm</p>
-                    {% if insights %}
-                        <h3>Health Insights</h3>
-                        <p>{{ insights | safe }}</p>
-                    {% else %}
-                        <p>No insights available. Please sync your Fitbit device.</p>
-                    {% endif %}
-                {% else %}
-                    <p>No Fitbit data available. Please log in with Fitbit to view your health metrics.</p>
+        <div class="fitbit-info-container">
+            <h2>Your Fitbit Data</h2>
+            {% if smartwatch_data.sp02 == "Rate Limit Exceeded" %}
+                <div class="error-message">
+                    Fitbit API rate limit exceeded. Please try again later.
+                </div>
+            {% else %}
+                <div class="fitbit-data-item">
+                    <i class="fas fa-lungs"></i>
+                    <span>SpO2: {{ smartwatch_data.sp02 }}%</span>
+                </div>
+                <div class="fitbit-data-item">
+                    <i class="fas fa-heartbeat"></i>
+                    <span>Heart Rate: {{ smartwatch_data.heart_rate }} bpm</span>
+                </div>
+                {% if insights %}
+                    <div class="insights-section">
+                        <h2>Health Insights</h2>
+                        <ul>
+                            {% for insight in insights.split('. ') %}
+                                {% if insight.strip() %}
+                                    <li>{{ insight.strip() }}.</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
                 {% endif %}
-            </div>
+            {% endif %}
+            <p>See all your Fitbit data on the <a href="/health_dashboard" style="color: var(--highlight-color); text-decoration: none;">Health Dashboard</a>.</p>
         </div>
     </div>
     <script>

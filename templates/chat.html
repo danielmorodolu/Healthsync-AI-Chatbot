@@ -79,7 +79,7 @@
                 chatMessages.appendChild(messageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.error('Error resetting session:', error));
         }
 
         document.getElementById('chat-form').addEventListener('submit', function(e) {
@@ -105,38 +105,52 @@
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Chat response:', data); // Debug: Log the response data
+
                 const botMessageDiv = document.createElement('div');
                 botMessageDiv.className = 'message bot-message';
                 botMessageDiv.innerHTML = `${data.message}<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
                 chatMessages.appendChild(botMessageDiv);
 
-                if (data.follow_up) {
+                if (data.follow_up && typeof data.follow_up === 'object') {
+                    console.log('Rendering follow-up:', data.follow_up); // Debug: Log follow-up data
                     const followUpDiv = document.createElement('div');
-                    followUpDiv.className = `follow-up ${data.follow_up === "This is my final assessment based on your symptoms." ? 'final' : ''}`;
-                    if (data.follow_up === "This is my final assessment based on your symptoms.") {
-                        followUpDiv.textContent = data.follow_up;
-                    } else {
-                        followUpDiv.innerHTML = `
-                            <p>${data.follow_up.text}</p>
-                            ${data.follow_up.ui_hint === "dropdown" ? `
+                    followUpDiv.className = 'follow-up';
+                    try {
+                        if (!data.follow_up.text || !data.follow_up.options || !data.follow_up.ui_hint) {
+                            throw new Error('Invalid follow_up data: missing text, options, or ui_hint');
+                        }
+                        let formHtml = `<p>${data.follow_up.text}</p>`;
+                        if (data.follow_up.ui_hint === "dropdown") {
+                            formHtml += `
                                 <select name="answer" ${data.follow_up.type === "group_multiple" ? 'multiple' : ''}>
                                     ${data.follow_up.options.map(option => `<option value="${option}">${option}</option>`).join('')}
                                 </select>
-                            ` : data.follow_up.ui_hint === "checkboxes" ? `
+                            `;
+                        } else if (data.follow_up.ui_hint === "checkboxes") {
+                            formHtml += `
                                 ${data.follow_up.options.map(option => `
                                     <label><input type="checkbox" name="answer" value="${option}"> ${option}</label><br>
                                 `).join('')}
-                            ` : `
-                                <input type="text" name="free_text" placeholder="Type your answer...">
-                            `}
-                            <button class="follow-up-submit">Submit</button>
-                        `;
-                        followUpDiv.querySelector('.follow-up-submit').addEventListener('click', function() {
+                            `;
+                        } else {
+                            formHtml += `<input type="text" name="free_text" placeholder="Type your answer...">`;
+                        }
+                        formHtml += `<button class="follow-up-submit">Submit</button>`;
+                        followUpDiv.innerHTML = formHtml;
+
+                        const submitButton = followUpDiv.querySelector('.follow-up-submit');
+                        if (!submitButton) {
+                            throw new Error('Follow-up submit button not found in DOM');
+                        }
+                        submitButton.addEventListener('click', function() {
                             const answer = data.follow_up.ui_hint === "dropdown" ? 
                                 followUpDiv.querySelector('select').value : 
                                 data.follow_up.ui_hint === "checkboxes" ? 
                                     Array.from(followUpDiv.querySelectorAll('input[name="answer"]:checked')).map(input => input.value) : 
                                     followUpDiv.querySelector('input[name="free_text"]').value;
+
+                            console.log('Submitting follow-up answer:', answer); // Debug: Log the answer being submitted
 
                             fetch('/chat', {
                                 method: 'POST',
@@ -152,23 +166,145 @@
                             })
                             .then(response => response.json())
                             .then(data => {
+                                console.log('Follow-up response:', data); // Debug: Log the follow-up response
                                 followUpDiv.remove();
                                 const botMessageDiv = document.createElement('div');
                                 botMessageDiv.className = 'message bot-message';
                                 botMessageDiv.innerHTML = `${data.message}<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
                                 chatMessages.appendChild(botMessageDiv);
                                 chatMessages.scrollTop = chatMessages.scrollHeight;
-                            });
+
+                                // Recursively handle nested follow-up questions
+                                if (data.follow_up && typeof data.follow_up === 'object') {
+                                    setTimeout(() => renderFollowUp(data.follow_up), 0);
+                                } else if (data.follow_up === "This is my final assessment based on your symptoms.") {
+                                    const finalDiv = document.createElement('div');
+                                    finalDiv.className = 'follow-up final';
+                                    finalDiv.textContent = data.follow_up;
+                                    chatMessages.appendChild(finalDiv);
+                                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                                }
+                            })
+                            .catch(error => console.error('Error submitting follow-up:', error));
                         });
+                        chatMessages.appendChild(followUpDiv);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    } catch (error) {
+                        console.error('Error rendering follow-up form:', error);
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'message bot-message';
+                        errorDiv.innerHTML = `Error rendering follow-up question: ${error.message}. Please try again.<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+                        chatMessages.appendChild(errorDiv);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
                     }
+                } else if (data.follow_up === "This is my final assessment based on your symptoms.") {
+                    const followUpDiv = document.createElement('div');
+                    followUpDiv.className = 'follow-up final';
+                    followUpDiv.textContent = data.follow_up;
                     chatMessages.appendChild(followUpDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
                 }
 
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 this.reset();
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error in chat request:', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'message bot-message';
+                errorDiv.innerHTML = `Error: ${error.message}. Please try again.<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+                chatMessages.appendChild(errorDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
         });
+
+        // Function to render follow-up questions recursively
+        function renderFollowUp(followUpData) {
+            console.log('Rendering follow-up (recursive):', followUpData); // Debug: Log follow-up data
+            const chatMessages = document.getElementById('chatMessages');
+            const followUpDiv = document.createElement('div');
+            followUpDiv.className = 'follow-up';
+            try {
+                if (!followUpData.text || !followUpData.options || !followUpData.ui_hint) {
+                    throw new Error('Invalid follow_up data: missing text, options, or ui_hint');
+                }
+                let formHtml = `<p>${followUpData.text}</p>`;
+                if (followUpData.ui_hint === "dropdown") {
+                    formHtml += `
+                        <select name="answer" ${followUpData.type === "group_multiple" ? 'multiple' : ''}>
+                            ${followUpData.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+                        </select>
+                    `;
+                } else if (followUpData.ui_hint === "checkboxes") {
+                    formHtml += `
+                        ${followUpData.options.map(option => `
+                            <label><input type="checkbox" name="answer" value="${option}"> ${option}</label><br>
+                        `).join('')}
+                    `;
+                } else {
+                    formHtml += `<input type="text" name="free_text" placeholder="Type your answer...">`;
+                }
+                formHtml += `<button class="follow-up-submit">Submit</button>`;
+                followUpDiv.innerHTML = formHtml;
+
+                const submitButton = followUpDiv.querySelector('.follow-up-submit');
+                if (!submitButton) {
+                    throw new Error('Follow-up submit button not found in DOM');
+                }
+                submitButton.addEventListener('click', function() {
+                    const answer = followUpData.ui_hint === "dropdown" ? 
+                        followUpDiv.querySelector('select').value : 
+                        followUpData.ui_hint === "checkboxes" ? 
+                            Array.from(followUpDiv.querySelectorAll('input[name="answer"]:checked')).map(input => input.value) : 
+                            followUpDiv.querySelector('input[name="free_text"]').value;
+
+                    console.log('Submitting follow-up answer (recursive):', answer); // Debug: Log the answer being submitted
+
+                    fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user_id: '{{ user_id }}',
+                            age: {{ age }},
+                            sex: '{{ sex }}',
+                            [followUpData.ui_hint === "text" ? 'free_text' : 'answer']: answer
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Follow-up response (recursive):', data); // Debug: Log the follow-up response
+                        followUpDiv.remove();
+                        const botMessageDiv = document.createElement('div');
+                        botMessageDiv.className = 'message bot-message';
+                        botMessageDiv.innerHTML = `${data.message}<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+                        chatMessages.appendChild(botMessageDiv);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                        if (data.follow_up && typeof data.follow_up === 'object') {
+                            setTimeout(() => renderFollowUp(data.follow_up), 0);
+                        } else if (data.follow_up === "This is my final assessment based on your symptoms.") {
+                            const finalDiv = document.createElement('div');
+                            finalDiv.className = 'follow-up final';
+                            finalDiv.textContent = data.follow_up;
+                            chatMessages.appendChild(finalDiv);
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
+                    })
+                    .catch(error => console.error('Error submitting follow-up (recursive):', error));
+                });
+                chatMessages.appendChild(followUpDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (error) {
+                console.error('Error rendering follow-up form (recursive):', error);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'message bot-message';
+                errorDiv.innerHTML = `Error rendering follow-up question: ${error.message}. Please try again.<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+                chatMessages.appendChild(errorDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
     </script>
 </body>
 </html>

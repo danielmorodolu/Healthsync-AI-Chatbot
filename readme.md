@@ -168,6 +168,3 @@ This project is licensed under the MIT License.
 
 ### Next Steps
 - **Test the Deployed App:** Ensure all features (login, triaging, navigation) work as expected on the deployed URL (`https://healthsync-ai-chatbot.onrender.com`).
-- **Proceed to Objective 5:** We can now move to Objective 5 (Suggestions for Improving the Project), where we’ll implement enhancements like responsive design with Tailwind CSS, accessibility improvements, and a health insights dashboard.
-
-Let me know if you’d like to make any adjustments to the README or proceed with Objective 5!

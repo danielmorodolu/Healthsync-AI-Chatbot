@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>HealthSync AI - Add Health Data</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://kit.fontawesome.com/584e930da3.js" crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,36 +11,45 @@
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync Logo" class="logo">
-            <h1>HealthSync AI - Add Health Data</h1>
+            <div class="header-content">
+                <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync Logo" class="logo">
+                <h1 class="header-title">HealthSync AI - Add Health Data</h1>
+            </div>
             <div class="nav-menu">
                 <button class="nav-toggle" onclick="toggleNavMenu()">
                     <i class="fas fa-ellipsis-v"></i>
                 </button>
                 <div class="nav-dropdown" id="navDropdown">
-                    <a href="/chat">Back to Chat</a>
-                    <a href="/fitbit_info">Fitbit Info</a>
+                    <a href="/fitbit_info">Fitbit Insights</a>
                     <a href="/profile">Profile & Settings</a>
                     <a href="/health_dashboard">Health Dashboard</a>
+                    <a href="/chat">Chat</a>
                     <a href="{% if 'fitbit_user' in session %}/logout{% else %}/auth0/logout{% endif %}">Sign Out</a>
                 </div>
             </div>
         </div>
-        <div class="chat-messages">
-            <div class="health-data-form">
-                <h2>Add Manual Health Data</h2>
-                <form id="healthDataForm" method="POST" action="/health_data">
-                    <input type="hidden" name="user_id" value="{{ user_id }}">
+        <div class="health-data-container">
+            <h2>Add Manual Health Data</h2>
+            <form id="healthDataForm" onsubmit="return validateHealthData()">
+                <input type="hidden" name="user_id" value="{{ user_id }}">
+                <div class="form-group">
                     <label for="temperature">Temperature (°C):</label>
-                    <input type="number" step="0.1" name="temperature" id="temperature" placeholder="e.g., 37.0">
+                    <input type="number" id="temperature" name="temperature" step="0.1" placeholder="e.g., 37.0">
+                </div>
+                <div class="form-group">
                     <label for="blood_pressure_systolic">Blood Pressure (Systolic, mmHg):</label>
-                    <input type="number" name="blood_pressure_systolic" id="blood_pressure_systolic" placeholder="e.g., 120">
+                    <input type="number" id="blood_pressure_systolic" name="blood_pressure_systolic" placeholder="e.g., 120">
+                </div>
+                <div class="form-group">
                     <label for="blood_pressure_diastolic">Blood Pressure (Diastolic, mmHg):</label>
-                    <input type="number" name="blood_pressure_diastolic" id="blood_pressure_diastolic" placeholder="e.g., 80">
-                    <button type="submit">Submit Health Data</button>
-                </form>
-                <a href="/chat">Back to Chat</a>
+                    <input type="number" id="blood_pressure_diastolic" name="blood_pressure_diastolic" placeholder="e.g., 80">
+                </div>
+                <button type="submit">Submit Health Data</button>
+            </form>
+            <div class="health-data-prompt">
+                <p><a href="/chat" style="color: var(--highlight-color); text-decoration: none;">Back to Chat</a></p>
             </div>
+            <div id="formError" class="error-message" style="display: none;"></div>
         </div>
     </div>
     <script>
@@ -48,23 +58,77 @@
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
         }
 
-        document.getElementById('healthDataForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const data = {};
-            formData.forEach((value, key) => data[key] = value);
+        function validateHealthData() {
+            const temperature = document.getElementById('temperature').value;
+            const systolic = document.getElementById('blood_pressure_systolic').value;
+            const diastolic = document.getElementById('blood_pressure_diastolic').value;
+            const errorDiv = document.getElementById('formError');
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+
+            // Validate temperature
+            if (temperature && (temperature < 35 || temperature > 42)) {
+                errorDiv.textContent = 'Temperature must be between 35°C and 42°C.';
+                errorDiv.style.display = 'block';
+                return false;
+            }
+
+            // Validate blood pressure
+            if (systolic || diastolic) {
+                if (!systolic || !diastolic) {
+                    errorDiv.textContent = 'Please enter both systolic and diastolic blood pressure values.';
+                    errorDiv.style.display = 'block';
+                    return false;
+                }
+                if (systolic < 50 || systolic > 250) {
+                    errorDiv.textContent = 'Systolic blood pressure must be between 50 and 250 mmHg.';
+                    errorDiv.style.display = 'block';
+                    return false;
+                }
+                if (diastolic < 30 || diastolic > 150) {
+                    errorDiv.textContent = 'Diastolic blood pressure must be between 30 and 150 mmHg.';
+                    errorDiv.style.display = 'block';
+                    return false;
+                }
+                if (parseInt(systolic) <= parseInt(diastolic)) {
+                    errorDiv.textContent = 'Systolic blood pressure must be greater than diastolic blood pressure.';
+                    errorDiv.style.display = 'block';
+                    return false;
+                }
+            }
+
+            // If validation passes, submit the form via AJAX
+            const formData = {
+                user_id: document.querySelector('input[name="user_id"]').value,
+                temperature: temperature || null,
+                blood_pressure_systolic: systolic || null,
+                blood_pressure_diastolic: diastolic || null
+            };
+
             fetch('/health_data', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            }).then(response => response.json()).then(data => {
-                alert(data.message);
-                window.location.href = '/chat';
-            }).catch(error => {
-                console.error('Error:', error);
-                alert('Failed to submit health data. Please try again.');
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    window.location.href = '/chat'; // Redirect to chat page on success
+                } else {
+                    errorDiv.textContent = 'An error occurred while submitting the data.';
+                    errorDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                errorDiv.textContent = 'An error occurred while submitting the data.';
+                errorDiv.style.display = 'block';
             });
-        });
+
+            return false; // Prevent default form submission
+        }
     </script>
 </body>
 </html>

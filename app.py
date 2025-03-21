@@ -111,7 +111,7 @@ def fitbit_info():
     if 'fitbit_user' in session:
         fitbit_client.set_access_token(session.get('access_token'))
         fitbit_client.set_refresh_token(session.get('refresh_token'))
-        smartwatch_data = fitbit_client.get_fitbit_data()
+        smartwatch_data = fitbit_client.get_basic_fitbit_data()  # Use basic data for fitbit_info page
         if smartwatch_data and (smartwatch_data['sp02'] != 'N/A' or smartwatch_data['heart_rate'] != 'N/A'):
             prompt = f"Analyze the following Fitbit data and provide health insights and improvement tips: SpO2: {smartwatch_data['sp02']}%, Heart Rate: {smartwatch_data['heart_rate']} bpm."
             response = openai_client.chat.completions.create(
@@ -144,12 +144,39 @@ def health_dashboard():
     manual_health_data = user_session.get('manual_health_data', {})
 
     smartwatch_data = None
+    steps_progress = 0
     if 'fitbit_user' in session:
         fitbit_client.set_access_token(session.get('access_token'))
         fitbit_client.set_refresh_token(session.get('refresh_token'))
-        smartwatch_data = fitbit_client.get_fitbit_data()
+        smartwatch_data = fitbit_client.get_all_fitbit_data()  # Use all data for health dashboard
+        # Calculate steps progress as a percentage of 10,000 steps
+        if smartwatch_data['steps'] != 'N/A':
+            steps_progress = round((int(smartwatch_data['steps']) / 10000 * 100), 2)
+    else:
+        smartwatch_data = {
+            "sp02": "N/A",
+            "heart_rate": "N/A",
+            "heart_rate_zones": {
+                "out_of_range": {"caloriesOut": "N/A", "minutes": "N/A"},
+                "fat_burn": {"caloriesOut": "N/A", "minutes": "N/A"},
+                "cardio": {"caloriesOut": "N/A", "minutes": "N/A"},
+                "peak": {"caloriesOut": "N/A", "minutes": "N/A"}
+            },
+            "steps": "N/A",
+            "distance": "N/A",
+            "calories": "N/A",
+            "active_minutes": "N/A",
+            "floors": "N/A",
+            "sleep_duration": "N/A",
+            "sleep_stages": {"light": "N/A", "deep": "N/A", "rem": "N/A", "wake": "N/A"},
+            "weight": "N/A",
+            "bmi": "N/A",
+            "body_fat": "N/A",
+            "water": "N/A",
+            "calories_in": "N/A"
+        }
 
-    return render_template('health_dashboard.html', smartwatch_data=smartwatch_data, manual_health_data=manual_health_data)
+    return render_template('health_dashboard.html', smartwatch_data=smartwatch_data, manual_health_data=manual_health_data, steps_progress=steps_progress)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>HealthSync AI - Chat</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="https://kit.fontawesome.com/584e930da3.js" crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthSync AI Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="chat-container">
@@ -15,28 +14,19 @@
                 <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync Logo" class="logo">
                 <h1 class="header-title">HealthSync AI Chat :</h1>
             </div>
-            {% if fitbit_user %}
-                {% if smartwatch_data and (smartwatch_data.sp02 != 'N/A' or smartwatch_data.heart_rate != 'N/A') %}
-                    <div class="fitbit-data">
-                        <span>SpO2: <span class="fitbit-value">{{ smartwatch_data.sp02 }}%</span></span>
-                        <span>Heart Rate: <span class="fitbit-value">{{ smartwatch_data.heart_rate }} bpm</span></span>
-                    </div>
-                {% else %}
-                    <div class="fitbit-alert" id="fitbitAlert">
-                        <span>Fitbit data unavailable. <a href="https://www.fitbit.com" target="_blank">Sync your device</a> in the Fitbit app.</span>
-                        <button class="close-btn" onclick="dismissFitbitAlert()">×</button>
-                    </div>
-                {% endif %}
-            {% endif %}
+            <div class="fitbit-data">
+                <span>SpO2: <span class="fitbit-value">{{ smartwatch_data.sp02 }}%</span></span>
+                <span>Heart Rate: <span class="fitbit-value">{{ smartwatch_data.heart_rate }} bpm</span></span>
+            </div>
             <div class="nav-menu">
-                <button class="nav-toggle" onclick="toggleNavMenu()">
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
+                <button class="nav-toggle" onclick="toggleNav()">☰</button>
                 <div class="nav-dropdown" id="navDropdown">
-                    <a href="/fitbit_info">Fitbit Insights</a>
-                    <a href="/profile">Profile & Settings</a>
-                    <a href="/health_dashboard">Health Dashboard</a>
-                    <a href="{% if 'fitbit_user' in session %}/logout{% else %}/auth0/logout{% endif %}">Sign Out</a>
+                    <a href="{{ url_for('chat_get') }}">Chat</a>
+                    {% if fitbit_user %}
+                    <a href="{{ url_for('fitbit_info') }}">Fitbit Insights</a>
+                    <a href="{{ url_for('health_dashboard') }}">Health Dashboard</a>
+                    {% endif %}
+                    <a href="{{ url_for('profile') }}">Profile & Settings</a>
                 </div>
             </div>
         </div>
@@ -47,105 +37,138 @@
                     <span class="timestamp">{{ message.timestamp }}</span>
                 </div>
             {% endfor %}
-            <div id="loading" class="loading" style="display: none;">
-                <i class="fas fa-spinner fa-spin"></i> Loading...
-            </div>
         </div>
         <div class="chat-input">
-            <form id="chatForm" method="POST" action="/chat" onsubmit="return validateAge()">
-                <input type="hidden" name="user_id" value="{{ user_id }}">
-                {% if not age or not sex %}
-                    <select name="age" id="ageSelect" required onchange="checkAge()">
-                        <option value="" disabled selected>Select Age</option>
-                        {% for i in range(18, 101) %}
-                            <option value="{{ i }}">{{ i }}</option>
-                        {% endfor %}
-                    </select>
-                    <div id="ageError" class="error-message" style="display: none;">
-                        This application is for users aged 18 and above. Please consult a pediatrician for children.
-                    </div>
-                    <select name="sex" required>
-                        <option value="" disabled selected>Select Gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                    </select>
-                {% else %}
-                    <div class="profile-info">
-                        <span>Age: {{ age }} | Gender: {{ sex }} <a href="/edit_profile" style="margin-left: 10px; color: var(--highlight-color); text-decoration: none;">Edit</a></span>
-                    </div>
-                    <input type="hidden" name="age" value="{{ age }}">
-                    <input type="hidden" name="sex" value="{{ sex }}">
-                {% endif %}
-                <input type="text" name="input" id="userInput" placeholder="Type your message or symptom..." required>
+            <div class="profile-info">
+                Age: {{ age }} | Gender: {{ sex }} <a href="{{ url_for('edit_profile_get') }}">Edit</a>
+            </div>
+            <form id="chat-form">
+                <input type="text" name="input" placeholder="Type your message or symptom..." required>
                 <button type="submit">Send</button>
-                <button type="button" id="resetButton" onclick="resetSession()">Start New Diagnosis</button>
+                <button type="button" class="start-diagnosis-btn" onclick="resetSession()">Start New Diagnosis</button>
             </form>
             {% if not has_health_data %}
-                <div class="health-data-prompt">
-                    <p>Enhance your diagnosis by adding health data (e.g., temperature, blood pressure). <a href="/health_data" style="color: var(--highlight-color); text-decoration: none;">Add Health Data</a></p>
-                </div>
-            {% endif %}
-            {% if follow_up and follow_up != "This is my final assessment based on your symptoms." %}
-                <div class="follow-up">
-                    <p>{{ follow_up.text }}</p>
-                    {% if follow_up.ui_hint == "dropdown" %}
-                        <select name="answer" class="answer-select">
-                            <option value="" disabled selected>Select an option</option>
-                            {% for option in follow_up.options %}
-                                <option value="{{ option }}">{{ option }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="button" class="follow-up-submit">Submit</button>
-                    {% elif follow_up.ui_hint == "checkboxes" %}
-                        {% for option in follow_up.options %}
-                            <label><input type="checkbox" name="answer" value="{{ option }}"> {{ option }}</label>
-                        {% endfor %}
-                        <button type="button" class="follow-up-submit">Submit</button>
-                    {% elif follow_up.ui_hint == "text" %}
-                        <input type="text" name="free_text" placeholder="Describe your answer (e.g., '2 days')..." 
-                               onkeypress="if(event.key === 'Enter') submitFreeText()">
-                        <button type="button" class="follow-up-submit">Submit</button>
-                    {% endif %}
-                </div>
-            {% elif follow_up == "This is my final assessment based on your symptoms." %}
-                <div class="follow-up final">
-                    <p>{{ follow_up }}</p>
-                </div>
-            {% endif %}
-            {% if error_message %}
-                <div class="error-message">{{ error_message }}</div>
+            <div class="health-data-prompt">
+                Enhance your diagnosis by adding health data (e.g., temperature, blood pressure). <a href="{{ url_for('health_data_get') }}">Add Health Data</a>
+            </div>
             {% endif %}
         </div>
     </div>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
     <script>
-        function toggleNavMenu() {
-            const dropdown = document.getElementById('navDropdown');
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        function toggleNav() {
+            const navDropdown = document.getElementById('navDropdown');
+            navDropdown.style.display = navDropdown.style.display === 'block' ? 'none' : 'block';
         }
 
-        function dismissFitbitAlert() {
-            document.getElementById('fitbitAlert').style.display = 'none';
+        function resetSession() {
+            fetch('/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user_id: '{{ user_id }}' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = '';
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message bot-message';
+                messageDiv.innerHTML = `${data.message}<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            })
+            .catch(error => console.error('Error:', error));
         }
 
-        function validateAge() {
-            const age = document.getElementById('ageSelect') ? document.getElementById('ageSelect').value : {{ age|default(30) }};
-            if (age < 18) {
-                document.getElementById('ageError').style.display = 'block';
-                return false;
-            }
-            return true;
-        }
+        document.getElementById('chat-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = this.querySelector('input[name="input"]').value;
+            const userId = '{{ user_id }}';
+            const age = {{ age }};
+            const sex = '{{ sex }}';
 
-        function checkAge() {
-            const age = document.getElementById('ageSelect').value;
-            if (age < 18) {
-                document.getElementById('ageError').style.display = 'block';
-            } else {
-                document.getElementById('ageError').style.display = 'none';
-            }
-        }
+            const chatMessages = document.getElementById('chatMessages');
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.className = 'message user-message';
+            userMessageDiv.innerHTML = `${input}<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+            chatMessages.appendChild(userMessageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ input, user_id: userId, age, sex })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.className = 'message bot-message';
+                botMessageDiv.innerHTML = `${data.message}<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+                chatMessages.appendChild(botMessageDiv);
+
+                if (data.follow_up) {
+                    const followUpDiv = document.createElement('div');
+                    followUpDiv.className = `follow-up ${data.follow_up === "This is my final assessment based on your symptoms." ? 'final' : ''}`;
+                    if (data.follow_up === "This is my final assessment based on your symptoms.") {
+                        followUpDiv.textContent = data.follow_up;
+                    } else {
+                        followUpDiv.innerHTML = `
+                            <p>${data.follow_up.text}</p>
+                            ${data.follow_up.ui_hint === "dropdown" ? `
+                                <select name="answer" ${data.follow_up.type === "group_multiple" ? 'multiple' : ''}>
+                                    ${data.follow_up.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+                                </select>
+                            ` : data.follow_up.ui_hint === "checkboxes" ? `
+                                ${data.follow_up.options.map(option => `
+                                    <label><input type="checkbox" name="answer" value="${option}"> ${option}</label><br>
+                                `).join('')}
+                            ` : `
+                                <input type="text" name="free_text" placeholder="Type your answer...">
+                            `}
+                            <button class="follow-up-submit">Submit</button>
+                        `;
+                        followUpDiv.querySelector('.follow-up-submit').addEventListener('click', function() {
+                            const answer = data.follow_up.ui_hint === "dropdown" ? 
+                                followUpDiv.querySelector('select').value : 
+                                data.follow_up.ui_hint === "checkboxes" ? 
+                                    Array.from(followUpDiv.querySelectorAll('input[name="answer"]:checked')).map(input => input.value) : 
+                                    followUpDiv.querySelector('input[name="free_text"]').value;
+
+                            fetch('/chat', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    user_id: userId,
+                                    age: age,
+                                    sex: sex,
+                                    [data.follow_up.ui_hint === "text" ? 'free_text' : 'answer']: answer
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                followUpDiv.remove();
+                                const botMessageDiv = document.createElement('div');
+                                botMessageDiv.className = 'message bot-message';
+                                botMessageDiv.innerHTML = `${data.message}<span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+                                chatMessages.appendChild(botMessageDiv);
+                                chatMessages.scrollTop = chatMessages.scrollHeight;
+                            });
+                        });
+                    }
+                    chatMessages.appendChild(followUpDiv);
+                }
+
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                this.reset();
+            })
+            .catch(error => console.error('Error:', error));
+        });
     </script>
 </body>
 </html>

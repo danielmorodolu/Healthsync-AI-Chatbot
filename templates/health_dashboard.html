@@ -7,92 +7,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://kit.fontawesome.com/584e930da3.js" crossorigin="anonymous"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 25px;
-            max-height: 800px;
-            overflow-y: auto;
-        }
-        .dashboard-section {
-            margin-bottom: 25px;
-        }
-        .dashboard-section h2 {
-            font-size: 1.8em;
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-        .dashboard-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            margin-bottom: 5px;
-        }
-        .dashboard-item i {
-            margin-right: 10px;
-            color: var(--primary-color);
-            font-size: 1.2em;
-        }
-        .dashboard-item span {
-            font-weight: 500;
-            font-size: 1.1em;
-        }
-        .sub-item {
-            padding-left: 20px;
-            font-size: 1em;
-            color: #6c757d;
-        }
-        .tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: help;
-        }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 200px;
-            background-color: #555;
-            color: #fff;
-            text-align: center;
-            border-radius: 5px;
-            padding: 5px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -100px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-        .progress-bar {
-            width: 100%;
-            background-color: #e0e0e0;
-            border-radius: 5px;
-            margin-top: 5px;
-        }
-        .progress {
-            height: 10px;
-            background-color: var(--primary-color);
-            border-radius: 5px;
-        }
-        /* Reduce space around the footer section */
-        .dashboard-section.footer {
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-        }
-        .error-message {
-            color: var(--error-color);
-            font-size: 1.1em;
-            margin-top: 15px;
-        }
-    </style>
 </head>
 <body>
     <div class="chat-container">
@@ -144,7 +58,7 @@
                                     {% else %}
                                         N/A kcal
                                     {% endif %}
-                                    , Minutes: {{ smartwatch_data.heart_rate_zones.out_of_range.minutes }}
+                                    , Minutes: {{ smartwatch_data.heart_rate_zones.out_of_range.minutes }} min
                                 </span>
                             </div>
                             <div class="dashboard-item">
@@ -156,7 +70,7 @@
                                     {% else %}
                                         N/A kcal
                                     {% endif %}
-                                    , Minutes: {{ smartwatch_data.heart_rate_zones.fat_burn.minutes }}
+                                    , Minutes: {{ smartwatch_data.heart_rate_zones.fat_burn.minutes }} min
                                 </span>
                             </div>
                             <div class="dashboard-item">
@@ -168,7 +82,7 @@
                                     {% else %}
                                         N/A kcal
                                     {% endif %}
-                                    , Minutes: {{ smartwatch_data.heart_rate_zones.cardio.minutes }}
+                                    , Minutes: {{ smartwatch_data.heart_rate_zones.cardio.minutes }} min
                                 </span>
                             </div>
                             <div class="dashboard-item">
@@ -180,7 +94,7 @@
                                     {% else %}
                                         N/A kcal
                                     {% endif %}
-                                    , Minutes: {{ smartwatch_data.heart_rate_zones.peak.minutes }}
+                                    , Minutes: {{ smartwatch_data.heart_rate_zones.peak.minutes }} min
                                 </span>
                             </div>
                         </div>

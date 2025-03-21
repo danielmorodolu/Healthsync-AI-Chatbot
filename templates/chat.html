@@ -13,18 +13,7 @@
         <div class="chat-header">
             <div class="header-content">
                 <img src="{{ url_for('static', filename='images/healthsync-logo.png') }}" alt="HealthSync Logo" class="logo">
-                <h1 class="header-title">HealthSync AI Chat</h1>
-            </div>
-            <div class="nav-menu">
-                <button class="nav-toggle" onclick="toggleNavMenu()">
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
-                <div class="nav-dropdown" id="navDropdown">
-                    <a href="/fitbit_info">Fitbit Info</a>
-                    <a href="/profile">Profile & Settings</a>
-                    <a href="/health_dashboard">Health Dashboard</a>
-                    <a href="{% if 'fitbit_user' in session %}/logout{% else %}/auth0/logout{% endif %}">Sign Out</a>
-                </div>
+                <h1 class="header-title">HealthSync AI Chat :</h1>
             </div>
             {% if fitbit_user %}
                 {% if smartwatch_data and (smartwatch_data.sp02 != 'N/A' or smartwatch_data.heart_rate != 'N/A') %}
@@ -39,6 +28,17 @@
                     </div>
                 {% endif %}
             {% endif %}
+            <div class="nav-menu">
+                <button class="nav-toggle" onclick="toggleNavMenu()">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="/fitbit_info">Fitbit Insights</a>
+                    <a href="/profile">Profile & Settings</a>
+                    <a href="/health_dashboard">Health Dashboard</a>
+                    <a href="{% if 'fitbit_user' in session %}/logout{% else %}/auth0/logout{% endif %}">Sign Out</a>
+                </div>
+            </div>
         </div>
         <div class="chat-messages" id="chatMessages">
             {% for message in messages %}
@@ -123,6 +123,28 @@
         function toggleNavMenu() {
             const dropdown = document.getElementById('navDropdown');
             dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function dismissFitbitAlert() {
+            document.getElementById('fitbitAlert').style.display = 'none';
+        }
+
+        function validateAge() {
+            const age = document.getElementById('ageSelect') ? document.getElementById('ageSelect').value : {{ age|default(30) }};
+            if (age < 18) {
+                document.getElementById('ageError').style.display = 'block';
+                return false;
+            }
+            return true;
+        }
+
+        function checkAge() {
+            const age = document.getElementById('ageSelect').value;
+            if (age < 18) {
+                document.getElementById('ageError').style.display = 'block';
+            } else {
+                document.getElementById('ageError').style.display = 'none';
+            }
         }
     </script>
 </body>

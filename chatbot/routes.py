@@ -43,10 +43,26 @@ class ChatRoutes:
         user_id = session.get('user_id', 'default')
         user_session = self.session_manager.get_session(user_id)
         smartwatch_data = None
-        if 'fitbit_user' in session:
+        if 'fitbit_user' in session and session.get('access_token'):
             self.fitbit_client.set_access_token(session.get('access_token'))
-            smartwatch_data = self.fitbit_client.get_fitbit_data()
-            logger.debug(f"Smartwatch Data: {smartwatch_data}")  # Debug log
+            self.fitbit_client.set_refresh_token(session.get('refresh_token'))
+            smartwatch_data = self.fitbit_client.get_basic_fitbit_data()  # Corrected method name
+            logger.debug(f"Smartwatch Data: {smartwatch_data}")
+        else:
+            # Clear any invalid Fitbit-related session data if the user is not logged in with Fitbit
+            if 'fitbit_user' in session:
+                session.pop('fitbit_user', None)
+            if 'access_token' in session:
+                session.pop('access_token', None)
+            if 'refresh_token' in session:
+                session.pop('refresh_token', None)
+            smartwatch_data = {
+                "sp02": "N/A",
+                "heart_rate": "N/A"
+            }
+
+        # Check if health data exists
+        has_health_data = bool(user_session.get('manual_health_data', {}))
 
         return render_template(
             'chat.html',
@@ -55,7 +71,8 @@ class ChatRoutes:
             smartwatch_data=smartwatch_data,
             messages=[],
             age=user_session.get('age'),
-            sex=user_session.get('sex')
+            sex=user_session.get('sex'),
+            has_health_data=has_health_data
         )
 
     def chat_post(self):
@@ -236,9 +253,15 @@ class ChatRoutes:
 
         # Step 8: Integrate Fitbit Data (only for Fitbit users)
         smartwatch_data = None
-        if 'fitbit_user' in session:
+        if 'fitbit_user' in session and session.get('access_token'):
             self.fitbit_client.set_access_token(session.get('access_token'))
-            smartwatch_data = self.fitbit_client.get_fitbit_data()
+            self.fitbit_client.set_refresh_token(session.get('refresh_token'))
+            smartwatch_data = self.fitbit_client.get_basic_fitbit_data()  # Use basic data for chat page
+        else:
+            smartwatch_data = {
+                "sp02": "N/A",
+                "heart_rate": "N/A"
+            }
 
         return jsonify({
             "message": response_text,
